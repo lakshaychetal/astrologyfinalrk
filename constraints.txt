@@ -1,0 +1,3 @@
+# Constraint file to resolve websockets conflict
+# Force websockets to a version compatible with both packages
+websockets<12.0,>=10.0

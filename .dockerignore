@@ -1,0 +1,22 @@
+
+# Ignore everything not needed in the image
+.git
+.vscode
+.idea
+__pycache__
+*.py[cod]
+*$py.class
+.env
+.env.*
+.env.local
+.cache/
+.pytest_cache/
+venv/
+ENV/
+logs/
+*.log
+.gradio/
+node_modules/
+.DS_Store
+flagged/
+gradio_cached_examples/
