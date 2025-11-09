@@ -26,7 +26,7 @@ class OpenRouterSynthesizer:
 
     def __init__(
         self,
-        api_key: str = "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",
+        api_key: str = "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",
         model_name: str = "openai/gpt-4.1-mini",
         temperature: float = 0.6,
         max_output_tokens: int = 2000,

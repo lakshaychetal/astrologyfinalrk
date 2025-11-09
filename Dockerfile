@@ -1,15 +1,23 @@
-FROM python:3.10-slim
+FROM python:3.9-slim
 
 WORKDIR /app
 
-# Copy and install dependencies first
-COPY requirements.txt .
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy and install dependencies first (better caching)
+COPY requirements.txt constraints.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application files
-COPY config.py .
-COPY astrology_rag.py .
-COPY main.py .
+# Copy all application files
+COPY . .
+
+# Create necessary directories
+RUN mkdir -p /app/logs
 
 # Expose port
 EXPOSE 8080
@@ -19,7 +27,7 @@ ENV PORT=8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD python -c "import requests; requests.get('http://localhost:8080', timeout=5)"
+  CMD curl -f http://localhost:8080/health || exit 1
 
-# Run application
-CMD ["python", "main.py"]
+# Run FastAPI application (not Gradio)
+CMD ["python", "api_main.py"]

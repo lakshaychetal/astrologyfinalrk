@@ -13,8 +13,11 @@ numpy>=1.21.0
 # Retry logic
 tenacity==9.1.2
 
-# Web framework - upgraded for websockets compatibility
-gradio==4.44.1
+# FastAPI Backend (removed Gradio UI)
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+python-multipart==0.0.6
 
 # HTTP requests
 requests==2.32.5

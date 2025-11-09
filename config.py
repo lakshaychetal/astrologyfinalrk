@@ -45,10 +45,11 @@ ORCHESTRATOR_CONFIG = {
     "timeout_seconds": 30
 }
 
-# 2. EMBEDDINGS (text-embedding-004)
+# 2. EMBEDDINGS (text-multilingual-embedding-002)
+# ⚠️ MUST MATCH RAG CORPUS MODEL! Corpus uses text-multilingual-embedding-002 @ 768-dim
 EMBEDDINGS_CONFIG = {
-    "model": "text-embedding-004", 
-    "dimension": 256,  # Fast + accurate (vs 768 default)
+    "model": "text-multilingual-embedding-002", 
+    "dimension": 768,  # FIXED - Must be 768 for this model (not customizable)
     "batch_size": 10,  # Batch embedding calls
     "timeout_seconds": 30
 }
