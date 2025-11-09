@@ -17,7 +17,7 @@ Production-ready AI system for analyzing Vedic astrology birth charts using RAG 
 ### Prerequisites
 - Python 3.10+
 - Google Cloud project with Vertex AI enabled
-- RAG Engine corpus (ID: 2305843009213693952)
+- RAG Engine corpus (ID: 3379951520341557248)
 - Google Cloud API Key
 
 ### Installation
@@ -91,9 +91,9 @@ Environment variables in `.env`:
 ```
 GCP_PROJECT_ID=superb-analog-464304-s0
 GCP_REGION=asia-south1
-RAG_CORPUS_ID=2305843009213693952
+RAG_CORPUS_ID=3379951520341557248
 GOOGLE_CLOUD_API_KEY=your_key_here
-MODEL_NAME=gemini-2.5-flash
+MODEL_NAME=gemini-1.5-flash
 TEMPERATURE=0.2
 MAX_OUTPUT_TOKENS=8192
 TOP_P=0.8

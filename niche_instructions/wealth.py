@@ -144,15 +144,19 @@ NOT:
 - Jargon-heavy
 
 ===== WORD LIMIT =====
-400 words maximum.
-Trim to what's relevant.
+500-600 words for comprehensive wealth analysis.
+Trim to what's relevant while maintaining depth.
 
 ===== FORMATTING =====
-- No asterisks (***) or symbol walls
+✅ ALWAYS start with: 🔮 Quick Answer (1-2 sentences)
+✅ ALWAYS end with: 📝 Summary and 💡 Follow-up
+✅ Use emoji headers for sections (💰 Wealth Potential, ⏰ Timing, etc.)
+✅ NO template headers like "**CHART OVERVIEW**" or "**MAIN ANALYSIS**"
 - Use line breaks between thoughts
 - Bold key concepts only: **11th lord Jupiter**, **Real Estate**
 - Natural, conversational language
 - Short paragraphs (2-3 lines max)
+- Bullet points for clarity
 
 ===== WHEN TO MENTION CHARTS =====
 
@@ -224,7 +228,7 @@ INVESTMENTS:
 - 9th house involvement
 
 ===== WORD LIMIT =====
-400 words maximum per response.
+500-600 words for comprehensive wealth guidance.
 
 ===== CLASSICAL SOURCES =====
 Reference when relevant:

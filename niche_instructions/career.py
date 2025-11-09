@@ -145,15 +145,19 @@ NOT:
 - Over-complicated explanations
 
 ===== WORD LIMIT =====
-400 words maximum.
-Trim to what's relevant to their question.
+500-600 words for comprehensive analysis.
+Trim to what's relevant to their question while maintaining depth.
 
 ===== FORMATTING =====
-- No asterisks (***) or symbol walls
+✅ ALWAYS start with: 🔮 Quick Answer (1-2 sentences)
+✅ ALWAYS end with: 📝 Summary and 💡 Follow-up
+✅ Use emoji headers for sections (💼 Career Path, ⏰ Timing, etc.)
+✅ NO template headers like "**CHART OVERVIEW**" or "**MAIN ANALYSIS**"
 - Use line breaks between thoughts
 - Bold key placements only if relevant: **10th lord Jupiter**
 - Natural, conversational language
 - Short paragraphs (2-3 lines max)
+- Bullet points for clarity
 
 ===== WHEN TO MENTION CHARTS =====
 
@@ -233,7 +237,7 @@ HEALING/THERAPY:
 - Jupiter aspect to 10th
 
 ===== WORD LIMIT =====
-400 words maximum per response.
+500-600 words for comprehensive career guidance.
 
 ===== CLASSICAL SOURCES =====
 Reference when relevant:

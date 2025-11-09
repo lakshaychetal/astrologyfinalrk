@@ -13,20 +13,124 @@ load_dotenv()
 # ===== GCP CONFIGURATION =====
 PROJECT_ID = os.getenv("GCP_PROJECT_ID", "superb-analog-464304-s0")
 REGION = os.getenv("GCP_REGION", "asia-south1")
-CORPUS_ID = os.getenv("RAG_CORPUS_ID", "2305843009213693952")
+CORPUS_ID = os.getenv("RAG_CORPUS_ID", "3379951520341557248")
 
 # ===== MODEL CONFIGURATION =====
-MODEL_NAME = os.getenv("MODEL_NAME", "gemini-2.5-flash")
+MODEL_NAME = os.getenv("MODEL_NAME", "gemini-1.5-flash")
 TEMPERATURE = float(os.getenv("TEMPERATURE", "0.2"))
 MAX_OUTPUT_TOKENS = int(os.getenv("MAX_OUTPUT_TOKENS", "8192"))
 TOP_P = float(os.getenv("TOP_P", "0.8"))
 
 # ===== RAG CONFIGURATION =====
-RAG_TOP_K = int(os.getenv("RAG_TOP_K", "10"))
-RAG_DISTANCE_THRESHOLD = float(os.getenv("RAG_DISTANCE_THRESHOLD", "0.3"))
+USE_REAL_RAG = os.getenv("USE_REAL_RAG", "true").lower() == "true"
+RAG_TOP_K = int(os.getenv("RAG_TOP_K", "3"))  # Reduced from 10 to 3 for optimal speed/quality
+RAG_SIMILARITY_THRESHOLD = float(os.getenv("RAG_SIMILARITY_THRESHOLD", "0.5"))
+RAG_RETRIEVAL_TIMEOUT = int(os.getenv("RAG_RETRIEVAL_TIMEOUT", "5"))
 
 # ===== SERVER CONFIGURATION =====
 PORT = int(os.getenv("PORT", "8080"))
+
+# ===== APPROACH B CONFIGURATION =====
+USE_APPROACH_B = os.getenv("USE_APPROACH_B", "true").lower() == "true"
+USE_DYNAMIC_MODE = os.getenv("USE_DYNAMIC_MODE", "false").lower() == "true"  # Disable old 5-agent
+
+# ===== APPROACH B MODEL CONFIGURATIONS =====
+
+# 1. ORCHESTRATOR (Gemini 2.5 Flash)
+ORCHESTRATOR_CONFIG = {
+    "model": "gemini-1.5-flash",
+    "temperature": 0.1,  # Deterministic
+    "max_output_tokens": 1000,
+    "response_format": "application/json",
+    "timeout_seconds": 30
+}
+
+# 2. EMBEDDINGS (text-embedding-004)
+EMBEDDINGS_CONFIG = {
+    "model": "text-embedding-004", 
+    "dimension": 256,  # Fast + accurate (vs 768 default)
+    "batch_size": 10,  # Batch embedding calls
+    "timeout_seconds": 30
+}
+
+# 3. VECTOR SEARCH (Vertex AI with ScaNN)
+# ⚠️ TO ENABLE REAL MODE: Set these environment variables in .env:
+#    VECTOR_SEARCH_INDEX_ENDPOINT=projects/{project}/locations/{location}/indexEndpoints/{endpoint_id}
+#    VECTOR_SEARCH_DEPLOYED_INDEX=deployed-index-id
+VECTOR_SEARCH_CONFIG = {
+    "index_name": "astrology-corpus-index",
+    # Full resource name of the Vector Search index
+    "index_resource_name": os.getenv(
+        "VECTOR_SEARCH_INDEX",
+        "projects/superb-analog-464304-s0/locations/asia-south1/indexes/XXX"
+    ),
+    # Full resource name of the index endpoint
+    "index_endpoint_name": os.getenv(
+        "VECTOR_SEARCH_INDEX_ENDPOINT",
+        None  # Set to enable REAL mode: "projects/{project}/locations/{location}/indexEndpoints/{endpoint_id}"
+    ),
+    # Deployed index ID within the endpoint
+    "deployed_index_id": os.getenv(
+        "VECTOR_SEARCH_DEPLOYED_INDEX", 
+        None  # Set to enable REAL mode: "deployed_index_id"
+    ),
+    "top_k": 8,  # Return top 8 passages per query
+    "distance_threshold": 0.3,  # Min similarity (0.0-1.0)
+    "metric": "cosine",  # Distance metric
+    "timeout_seconds": 30,
+    # Mock mode settings
+    "use_mock_if_unavailable": True  # Falls back to mock if real endpoint fails
+}
+
+# 4. SYNTHESIZER (Gemini 2.5 Flash - faster and available in asia-south1)
+SYNTHESIZER_CONFIG = {
+    "model": "gemini-1.5-flash",
+    "temperature": 0.7,  # Creative but coherent
+    "max_output_tokens": 3000,
+    "response_format": "text/markdown",
+    "timeout_seconds": 60,
+    "fallback_model": os.getenv("SYNTHESIZER_FALLBACK_MODEL", "gemini-1.5-pro"),
+}
+
+# 5. VALIDATOR (Gemini 2.5 Flash)
+VALIDATOR_CONFIG = {
+    "model": "gemini-1.5-flash",
+    "temperature": 0.0,  # Deterministic
+    "confidence_threshold": 0.7,  # Only validate if < 0.7
+    "max_output_tokens": 500,
+    "response_format": "application/json",
+    "timeout_seconds": 30
+}
+
+# ===== PERFORMANCE TARGETS (Approach B) =====
+PERFORMANCE_TARGETS = {
+    "p50_latency_ms": 7000,  # 50% requests < 7s
+    "p95_latency_ms": 12000,  # 95% requests < 12s
+    "p99_latency_ms": 18000,  # 99% requests < 18s
+    "orchestrator_target_ms": 2000,
+    "embedding_target_ms": 250,
+    "search_target_ms": 100,
+    "synthesis_target_ms": 8000,
+    "validator_target_ms": 2000,
+}
+
+# ===== SESSION MANAGEMENT =====
+SESSION_CONFIG = {
+    "ttl_minutes": 60,  # Session timeout
+    "max_history_turns": 10,  # Keep last 10 Q&A
+    "max_sessions_in_memory": 100,  # Auto-cleanup after
+}
+
+# ===== EXPECTED CHART FACTORS =====
+EXPECTED_CHART_FACTORS = [
+    "7th_house_sign", "7th_lord", "7th_lord_placement", "planets_in_7th", "7th_lord_retrograde",
+    "venus_sign", "venus_house", "venus_nakshatra", "darakaraka_planet", "darakaraka_sign", 
+    "d9_7th_house", "d9_7th_lord", "d9_ascendant", "7th_nakshatra", "venus_pada",
+    "graha_malika_yoga", "parivartan_yoga", "parivartana_strength", "upapada_lagna", "upapada_lord",
+    "2nd_house_sign", "4th_house_sign", "5th_house_sign", "moon_sign", "current_mahadasha",
+    "current_antardasha", "current_antardasha_end_date", "next_favorable_dasha", 
+    "saturn_retrograde", "jupiter_retrograde"
+]
 
 # ===== CLOUD RUN CONFIGURATION =====
 MEMORY_GB = 2  # 2 GiB

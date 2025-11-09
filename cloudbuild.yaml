@@ -37,7 +37,7 @@ steps:
       - '--concurrency=10'
       - '--execution-environment=gen2'
       - '--cpu-boost'
-  - '--set-env-vars=GCP_PROJECT_ID=$PROJECT_ID,RAG_CORPUS_ID=2305843009213693952,GCP_REGION=asia-south1,GOOGLE_CLOUD_API_KEY=$_GOOGLE_CLOUD_API_KEY'
+  - '--set-env-vars=GCP_PROJECT_ID=$PROJECT_ID,RAG_CORPUS_ID=3379951520341557248,GCP_REGION=asia-south1,GOOGLE_CLOUD_API_KEY=$_GOOGLE_CLOUD_API_KEY'
       - '--allow-unauthenticated'
 
 images:
