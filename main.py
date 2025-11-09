@@ -164,7 +164,7 @@ def initialize_approach_b():
 
             # Use OpenRouter GPT-4.1 Mini for final synthesis (PRIMARY)
             synthesizer = OpenRouterSynthesizer(
-                api_key=os.getenv("OPENROUTER_API_KEY", "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"),
+                api_key=os.getenv("OPENROUTER_API_KEY", "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"),
                 model_name="openai/gpt-4.1-mini",
                 temperature=config.SYNTHESIZER_CONFIG.get("temperature", 0.6),
                 max_output_tokens=config.SYNTHESIZER_CONFIG.get("max_output_tokens", 2000),
