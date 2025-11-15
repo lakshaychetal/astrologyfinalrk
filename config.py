@@ -14,6 +14,7 @@ load_dotenv()
 PROJECT_ID = os.getenv("GCP_PROJECT_ID", "superb-analog-464304-s0")
 REGION = os.getenv("GCP_REGION", "asia-south1")
 CORPUS_ID = os.getenv("RAG_CORPUS_ID", "3379951520341557248")
+SYN_CORPUS_NAME = os.getenv("SYN_CORPUS_NAME", "syn_rules_corpus")  # SYN evaluation procedures corpus
 
 # ===== MODEL CONFIGURATION =====
 MODEL_NAME = os.getenv("MODEL_NAME", "gemini-1.5-flash")

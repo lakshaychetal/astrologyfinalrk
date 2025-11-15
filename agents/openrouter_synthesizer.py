@@ -80,6 +80,7 @@ class OpenRouterSynthesizer:
         chart_section = self._format_chart_section(chart_values, chart_focus, complexity)
         selected_references = self._select_classical_passages(question, classical_knowledge, complexity)
         references_section = self._format_classical(selected_references, complexity)
+        syn_section = self._format_syn_procedures(validated_knowledge)
 
         timing_instruction = ""
         if self._is_timing_question(question):
@@ -93,6 +94,7 @@ class OpenRouterSynthesizer:
             niche_instruction=niche_instruction,
             chart_section=chart_section,
             references_section=references_section,
+            syn_section=syn_section,
             history_text=history_text,
             timing_instruction=timing_instruction,
             word_target=word_target,
@@ -205,6 +207,7 @@ class OpenRouterSynthesizer:
         niche_instruction: str,
         chart_section: str,
         references_section: str,
+        syn_section: str = "",
         history_text: str,
         timing_instruction: str,
         word_target: str,
@@ -281,6 +284,19 @@ class OpenRouterSynthesizer:
                 "- Mention challenges and how to navigate them.",
             ])
 
+        # Add SYN-specific instructions if procedures are provided
+        if syn_section:
+            instructions.extend([
+                "",
+                "**CRITICAL - SYN Evaluation Procedure:**",
+                "- SYN procedures below are deterministic evaluation rules from expert practitioners.",
+                "- Apply each SYN rule systematically to the specific chart factors above.",
+                "- Format: 'Per SYN rule [brief description], your chart shows [specific placements], therefore [insight]'",
+                "- Example: 'Per SYN rule \"Venus in airy sign → modern partner\", your Venus is in Aquarius (D1) & Pisces (D9), therefore your spouse is unconventional and humanitarian.'",
+                "- Follow SYN guidance as structured methodology, but allow reasonable flexibility based on chart context.",
+                "- If multiple SYN rules apply, synthesize them into coherent narrative.",
+            ])
+
         instructions.extend([
             "- If chart data is insufficient for a specific point, provide the best possible answer based on available information, then acknowledge what additional data would help.",
             "- Avoid generic statements; be specific to THIS chart.",
@@ -292,28 +308,43 @@ class OpenRouterSynthesizer:
 
         instructions_text = "\n".join(instructions)
 
-        return f"""You are a master Vedic astrologer. Answer this question with precision and depth.
+        # Build prompt sections
+        prompt_sections = [
+            "You are a master Vedic astrologer. Answer this question with precision and depth.",
+            "",
+            "**User's Question:**",
+            question,
+            "",
+            "**Niche Context:**",
+            niche_instruction,
+            "",
+            "**Chart Data:**",
+            chart_section,
+        ]
 
-**User's Question:**
-{question}
+        # Add SYN section if available
+        if syn_section:
+            prompt_sections.extend([
+                "",
+                syn_section,
+            ])
 
-**Niche Context:**
-{niche_instruction}
+        # Add classical references
+        prompt_sections.extend([
+            "",
+            "**Classical References:**",
+            references_text,
+            "",
+            "**Conversation History:**",
+            history_block,
+            "",
+            "**Your Task:**",
+            instructions_text,
+            "",
+            "**Response:**",
+        ])
 
-**Chart Data:**
-{chart_section}
-
-**Classical References:**
-{references_text}
-
-**Conversation History:**
-{history_block}
-
-**Your Task:**
-{instructions_text}
-
-**Response:**
-"""
+        return "\n".join(prompt_sections)
 
     def _post_process(self, text: str) -> str:
         """Clean up response formatting."""
@@ -513,6 +544,34 @@ class OpenRouterSynthesizer:
                 f"- Source: {source}\n  Insight: {passage[:220]}{'...' if len(passage) > 220 else ''}\n  Query: {query[:120]}"
             )
 
+        return "\n".join(formatted)
+
+    def _format_syn_procedures(self, validated_knowledge: Optional[Dict]) -> str:
+        """Format SYN evaluation procedures with clear instructions for rule-following."""
+        if not validated_knowledge or "syn_procedures" not in validated_knowledge:
+            return ""
+
+        syn_procedures = validated_knowledge["syn_procedures"]
+        if not syn_procedures:
+            return ""
+
+        formatted: List[str] = []
+        formatted.append("## SYN Evaluation Procedures (Apply Systematically)\n")
+        formatted.append("These are deterministic evaluation rules. Apply each rule to the specific chart factors provided above.\n")
+        formatted.append("Format your analysis as: 'Per SYN rule [brief rule], your chart shows [specific factor], therefore [insight]'\n")
+        
+        for idx, proc in enumerate(syn_procedures, 1):
+            content = proc.get("content", "").strip()
+            section = proc.get("section", "Unknown")
+            score = proc.get("score", 0.0)
+            
+            # Truncate long procedures
+            if len(content) > 300:
+                content = content[:300] + "..."
+            
+            formatted.append(f"\n**Rule {idx}** (from {section}, relevance: {score:.2f}):")
+            formatted.append(f"{content}")
+        
         return "\n".join(formatted)
 
     def _token_set(self, text: str) -> set[str]:

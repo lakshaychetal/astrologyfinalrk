@@ -178,11 +178,21 @@ def initialize_approach_b():
                 model=config.EMBEDDINGS_CONFIG.get("model", "text-embedding-004"),
                 dimension=config.EMBEDDINGS_CONFIG.get("dimension", 768)
             )
+            
+            # Initialize SYN retriever for deterministic evaluation procedures
+            from agents.syn_retriever import SynRetriever
+            syn_retriever = SynRetriever(
+                project_id=config.PROJECT_ID,
+                location=config.REGION,
+                corpus_name=config.SYN_CORPUS_NAME,  # We'll add this to config
+            )
+            logger.info("✅ SYN retriever initialized for evaluation procedures")
 
         except Exception as e:
             logger.warning(f"Could not initialize services: {e}")
             synthesizer = None
             gemini_embedder = None
+            syn_retriever = None
         
         validator = LightweightValidator(
             project_id=config.PROJECT_ID,
@@ -226,9 +236,10 @@ def initialize_approach_b():
                 embedder=gemini_embedder,
                 rag_retriever=vector_search_retriever,
                 synthesizer=synthesizer,
+                syn_retriever=syn_retriever if 'syn_retriever' in locals() else None,
                 classifier=QuestionComplexityClassifier(),
             )
-            logger.info("✅ Smart orchestrator ready (Gemini Pro synthesis)")
+            logger.info("✅ Smart orchestrator ready (Gemini Pro synthesis + SYN evaluation procedures)")
         else:
             smart_orchestrator = None
             logger.warning("Smart orchestrator disabled because Gemini services are unavailable")

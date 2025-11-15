@@ -16,6 +16,7 @@ from datetime import datetime
 from agents.gemini_embeddings import GeminiEmbeddings
 from agents.modern_synthesizer import ModernSynthesizer
 from agents.question_complexity import ClassificationResult, QuestionComplexityClassifier
+from agents.syn_retriever import SynRetriever
 from niche_config import get_timing_factors, is_timing_question
 
 logger = logging.getLogger(__name__)
@@ -128,6 +129,7 @@ class SmartOrchestrator:
         embedder: GeminiEmbeddings,
         rag_retriever,
         synthesizer: ModernSynthesizer,
+        syn_retriever: Optional[SynRetriever] = None,
         classifier: Optional[QuestionComplexityClassifier] = None,
         distance_threshold: float = 0.32,
         max_timing_factors: int = 5,
@@ -135,6 +137,7 @@ class SmartOrchestrator:
         self.embedder = embedder
         self.rag_retriever = rag_retriever
         self.synthesizer = synthesizer
+        self.syn_retriever = syn_retriever
         self.classifier = classifier or QuestionComplexityClassifier()
         self.distance_threshold = distance_threshold
         self.max_timing_factors = max_timing_factors
@@ -201,6 +204,25 @@ class SmartOrchestrator:
             latencies["dedupe_ms"] = 0.0
             latencies["rerank_ms"] = 0.0
 
+        # 4.5. Retrieve SYN evaluation procedures (NEW)
+        syn_passages = []
+        if self.syn_retriever:
+            syn_start = time.time()
+            try:
+                syn_passages = self.syn_retriever.retrieve_syn(
+                    question=question,
+                    intent=classification.intent,
+                    chart_facts=chart_factors,  # Fixed parameter name
+                    top_k=3,  # Get top 3 evaluation procedures
+                )
+                latencies["syn_retrieval_ms"] = (time.time() - syn_start) * 1000
+                logger.info(f"Retrieved {len(syn_passages)} SYN evaluation procedures in {latencies['syn_retrieval_ms']:.0f}ms")
+            except Exception as e:
+                logger.warning(f"SYN retrieval failed: {e}")
+                latencies["syn_retrieval_ms"] = 0.0
+        else:
+            latencies["syn_retrieval_ms"] = 0.0
+
         # 5. Build prompt
         prompt_start = time.time()
         # (Prompt building happens inside synthesizer, but we track entry time)
@@ -210,11 +232,26 @@ class SmartOrchestrator:
         synthesis_start = time.time()
         llm_first_byte_time = None
         
+        # Format SYN passages for validated_knowledge parameter
+        validated_knowledge = None
+        if syn_passages:
+            validated_knowledge = {
+                "syn_procedures": [
+                    {
+                        "content": p.content,
+                        "section": p.chunk_id,
+                        "score": p.score,
+                    }
+                    for p in syn_passages
+                ]
+            }
+        
         response = self.synthesizer.synthesize_final_response(
             question=question,
             chart_values=chart_factors,
             chart_focus=chart_focus,
             classical_knowledge=passages,
+            validated_knowledge=validated_knowledge,  # Pass SYN procedures
             niche_instruction=niche_instruction or niche,
             conversation_history=conversation_history or [],
             complexity=classification.complexity,
