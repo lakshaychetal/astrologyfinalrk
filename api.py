@@ -271,7 +271,7 @@ def chat():
             niche=niche,
             niche_instruction="",
             conversation_history=[],
-            mode="draft"
+            mode="expand"  # Always use expand mode for detailed responses
         )
         
         chat_record = {
@@ -305,6 +305,85 @@ def get_chat_history():
         "niche": c.get("niche", ""),
         "timestamp": c["timestamp"].isoformat()
     } for c in chats]), 200
+
+@app.route("/api/v1/query", methods=["POST"])
+@token_required
+def query():
+    if not smart_orchestrator:
+        return jsonify({"error": "AI not initialized"}), 503
+    
+    data = request.json
+    session_id = data.get("session_id", "default")
+    question = data.get("question")
+    chart_data_obj = data.get("chart_data", {})
+    niche = data.get("niche", "love")
+    mode = data.get("mode", "expand")
+    
+    # Map niche
+    niche_map = {
+        "love": "Love & Relationships",
+        "career": "Career & Professional",
+        "wealth": "Wealth & Finance",
+        "health": "Health & Wellness",
+        "spiritual": "Spiritual Growth"
+    }
+    niche_full = niche_map.get(niche, "Love & Relationships")
+    
+    # Convert chart_data object to text
+    chart_text = f"""RASHI CHART (D1):
+Ascendant: {chart_data_obj.get('ascendant', 'Cancer')}
+7th House: {chart_data_obj.get('7th_house_sign', 'Capricorn')}
+7th Lord: {chart_data_obj.get('7th_lord', 'Saturn')} in {chart_data_obj.get('7th_lord_placement', '11th house')}
+Planets in 7th: {chart_data_obj.get('planets_in_7th', 'Venus')}
+Venus: {chart_data_obj.get('venus_sign', 'Capricorn')} in {chart_data_obj.get('venus_house', '7th')} house, {chart_data_obj.get('venus_nakshatra', 'Uttara Ashadha')} pada {chart_data_obj.get('venus_pada', '2')}
+Saturn: {chart_data_obj.get('saturn_sign', 'Taurus')} in {chart_data_obj.get('saturn_house', '11th')} house{' (Retrograde)' if chart_data_obj.get('saturn_retrograde') else ''}
+
+NAVAMSA (D9):
+Ascendant: {chart_data_obj.get('d9_ascendant', 'Cancer')}
+7th House: {chart_data_obj.get('d9_7th_house', 'Capricorn')}
+7th Lord: {chart_data_obj.get('d9_7th_lord', 'Saturn')}
+
+Dasha:
+Mahadasha: {chart_data_obj.get('current_mahadasha', 'Venus')} ({chart_data_obj.get('current_mahadasha_start', '2020-05-15')} to {chart_data_obj.get('current_mahadasha_end', '2040-05-15')})
+Antardasha: {chart_data_obj.get('current_antardasha', 'Saturn')} ({chart_data_obj.get('current_antardasha_start', '2023-11-15')} to {chart_data_obj.get('current_antardasha_end', '2027-01-15')})"""
+    
+    if not question:
+        return jsonify({"error": "Question required"}), 400
+    
+    try:
+        factors = chart_parser.parse_chart_text(chart_text, niche_full)
+        
+        result = smart_orchestrator.answer_question(
+            question=question,
+            chart_factors=factors,
+            niche=niche_full,
+            niche_instruction="",
+            conversation_history=[],
+            mode=mode
+        )
+        
+        chat_record = {
+            "user_id": request.user["user_id"],
+            "session_id": session_id,
+            "question": question,
+            "chart_data": chart_text,
+            "niche": niche_full,
+            "response": result.response,
+            "timestamp": datetime.utcnow()
+        }
+        chats_collection.insert_one(chat_record)
+        
+        return jsonify({
+            "session_id": session_id,
+            "response": result.response,
+            "complexity": result.complexity,
+            "passages_used": result.passages_used,
+            "mode": mode
+        }), 200
+    
+    except Exception as e:
+        logger.error(f"Query error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/health", methods=["GET"])
 def health():
