@@ -3,11 +3,19 @@
 
 Production-ready AI system for analyzing Vedic astrology birth charts using RAG Engine grounding.
 
+> **📚 NEW:** Complete authentication system with admin panel! See [START_HERE.md](START_HERE.md) to get started.
+> 
+> **📖 Documentation:** See [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) for complete documentation guide.
+
 ## Features
 
 - 📚 Classical Vedic astrology texts (BPHS, Phaladeepika, Brihat Jataka, Light on Life)
 - 🤖 Gemini 2.5 Flash AI with RAG Engine
 - 🎨 Gradio web interface
+- 🔐 User authentication & authorization (JWT)
+- 👨💼 Admin panel with full CRUD operations
+- 💬 Authenticated AI chat API
+- 🗄️ MongoDB database integration
 - ☁️ Google Cloud Run deployment
 - 🔄 Automatic retry logic for rate limits
 - 📊 Comprehensive astrological analysis
@@ -19,6 +27,7 @@ Production-ready AI system for analyzing Vedic astrology birth charts using RAG 
 - Google Cloud project with Vertex AI enabled
 - RAG Engine corpus (ID: 3379951520341557248)
 - Google Cloud API Key
+- MongoDB Atlas account (provided)
 
 ### Installation
 
@@ -42,11 +51,17 @@ pip install -r requirements.txt
 cp .env.example .env
 # Edit .env and add your GOOGLE_CLOUD_API_KEY
 
-# Run locally
-python main.py
-```
+# Create admin user
+python create_admin.py
 
-Open browser to: http://127.0.0.1:7860
+# Run API server (for REST API)
+python api.py
+# API runs on: http://localhost:5000
+
+# OR run Gradio interface (for web UI)
+python main.py
+# Gradio runs on: http://127.0.0.1:7860
+```
 
 ## Deployment to Cloud Run
 
@@ -97,6 +112,13 @@ MODEL_NAME=gemini-1.5-flash
 TEMPERATURE=0.2
 MAX_OUTPUT_TOKENS=8192
 TOP_P=0.8
+
+# Authentication
+JWT_SECRET=astro_secret_key_2024
+
+# MongoDB
+MONGO_URI=mongodb+srv://karmansingharora01:8813917626k@cluster0.pv8tb2q.mongodb.net/
+DB_NAME=astrology_ai
 ```
 
 ## Cloud Run Settings
@@ -111,10 +133,21 @@ TOP_P=0.8
 
 ## Usage
 
-1. Enter your birth chart data (D1, D9, D10)
-2. Ask your astrology question
-3. Click "🔮 Analyze Chart"
-4. Get detailed analysis with classical text citations
+### Web Interface (Gradio)
+1. Run `python main.py`
+2. Enter your birth chart data (D1, D9, D10)
+3. Ask your astrology question
+4. Click "🔮 Analyze Chart"
+5. Get detailed analysis with classical text citations
+
+### REST API
+1. Run `python api.py`
+2. See `API_README.md` for complete API documentation
+3. Use cURL or Postman to interact with endpoints
+
+**Default Admin Credentials:**
+- Email: `admin@astrology.ai`
+- Password: `admin123`
 
 ## Cost Estimate
 
@@ -147,6 +180,26 @@ Add Google Search grounding for modern synthesis:
 - Update system instructions for synthesis
 - Test locally, then deploy
 
+## API Endpoints
+
+See `API_README.md` for complete documentation with cURL examples.
+
+### Authentication
+- `POST /api/signup` - Create new user
+- `POST /api/login` - Login user
+- `GET /api/me` - Get current user profile
+
+### Admin (Admin Only)
+- `GET /api/admin/users` - Get all users
+- `GET /api/admin/users/<id>` - Get user (with password)
+- `POST /api/admin/users` - Create user
+- `PUT /api/admin/users/<id>` - Update user
+- `DELETE /api/admin/users/<id>` - Delete user
+
+### AI Chat (Authenticated)
+- `POST /api/chat` - Ask astrology question
+- `GET /api/chat/history` - Get chat history
+
 ## Project Structure
 
 ```
@@ -155,11 +208,39 @@ astrology-ai/
 ├── cloudbuild.yaml         # Cloud Build configuration
 ├── requirements.txt        # Python dependencies
 ├── config.py              # Configuration management
-├── astrology_rag.py       # RAG + Gemini integration
 ├── main.py                # Gradio web interface
+├── api.py                 # Flask REST API
+├── auth.py                # JWT authentication
+├── database.py            # MongoDB connection
+├── create_admin.py        # Admin user creation
+├── test_api.py            # API testing script
 ├── .env.example           # Environment template
 ├── README.md              # This file
+├── API_README.md          # Complete API documentation
+├── agents/                # AI agents
+├── niche_instructions/    # Niche-specific prompts
+├── utils/                 # Utilities
 └── run_locally.sh         # Local run script
+```
+
+## Database
+
+**MongoDB Connection:**
+```
+mongodb+srv://karmansingharora01:8813917626k@cluster0.pv8tb2q.mongodb.net/
+```
+
+**Database:** `astrology_ai`
+
+**Collections:**
+- `users` - User accounts with authentication
+- `chats` - Chat history for all users
+
+## Testing
+
+```bash
+# Test all API endpoints
+python test_api.py
 ```
 
 ## License
