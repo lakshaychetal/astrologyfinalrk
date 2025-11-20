@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { chat } from '@/lib/api';
-import { useTheme } from '@/contexts/ThemeContext';
 import { CosmicBackground } from '@/components/CosmicBackground';
-import { ArrowLeft, MessageCircle, Clock } from 'lucide-react';
+import { LiquidPanel } from '@/components/LiquidPanel';
+import { PlanetOrbit } from '@/components/PlanetOrbit';
+import { ArrowLeft, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface ChatHistory {
@@ -16,74 +17,86 @@ interface ChatHistory {
 export const History = () => {
   const [history, setHistory] = useState<ChatHistory[]>([]);
   const [loading, setLoading] = useState(true);
-  const { theme } = useTheme();
   const navigate = useNavigate();
 
-  const isDark = theme === 'dark';
-
   useEffect(() => {
-    chat.getHistory()
-      .then(res => setHistory(res.data.history || []))
+    chat
+      .getHistory()
+      .then((res) => setHistory(res.data.history || []))
       .catch(() => setHistory([]))
       .finally(() => setLoading(false));
   }, []);
 
   return (
-    <div className="min-h-screen p-4">
+    <div className="min-h-screen relative overflow-hidden bg-black text-white">
       <CosmicBackground />
-      <div className="max-w-4xl mx-auto">
+      <div className="relative z-10 mx-auto flex max-w-5xl flex-col gap-8 px-6 py-10">
+        <div className="flex flex-col gap-3">
+          <span className="text-xs uppercase tracking-[0.5em] text-white/50">Seven planets</span>
+          <div className="flex items-center gap-3">
+            <h1 className="text-4xl font-semibold tracking-tight">Archive</h1>
+            <PlanetOrbit size="sm" className="pointer-events-none" />
+          </div>
+          <p className="text-sm text-white/60">A calm ledger of every exchange.</p>
+        </div>
+
         <button
           onClick={() => navigate('/chat')}
-          className={`mb-6 flex items-center gap-2 transition ${isDark ? 'text-slate-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
+          className="flex items-center gap-2 text-[0.6rem] uppercase tracking-[0.4em] text-white/60"
         >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Chat
+          <ArrowLeft className="h-3 w-3" />
+          Back to chat
         </button>
 
-        <div className={`backdrop-blur-xl rounded-2xl p-8 border shadow-2xl ${isDark ? 'bg-slate-900/80 border-slate-700' : 'bg-white/90 border-gray-200'}`}>
-          <div className="flex items-center gap-3 mb-8">
-            <MessageCircle className={`w-8 h-8 ${isDark ? 'text-violet-400' : 'text-violet-600'}`} />
-            <div>
-              <h1 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Chat History</h1>
-              <p className={isDark ? 'text-slate-400' : 'text-gray-600'}>Your cosmic conversations</p>
-            </div>
+        <LiquidPanel className="space-y-3 px-6 py-8">
+          <div className="flex items-center gap-3 text-sm text-white/60">
+            <Clock className="h-4 w-4" />
+            <span>Every session is preserved, no extra noise.</span>
           </div>
+          {history.length === 0 && !loading ? (
+            <p className="text-xs uppercase tracking-[0.4em] text-white/40">Nothing archived yet.</p>
+          ) : (
+            <div className="flex flex-wrap gap-3 text-[0.6rem] uppercase tracking-[0.3em] text-white/40">
+              <span className="liquid-tag">Curated</span>
+              <span className="liquid-tag">Minimal</span>
+            </div>
+          )}
+        </LiquidPanel>
 
+        <div className="space-y-4">
           {loading ? (
-            <div className="text-center py-12">
-              <div className="inline-block w-8 h-8 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
+            <div className="flex items-center justify-center">
+              <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/20 border-t-white" />
             </div>
           ) : history.length === 0 ? (
-            <div className="text-center py-12">
-              <MessageCircle className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-violet-400/50' : 'text-violet-300'}`} />
-              <p className={isDark ? 'text-slate-400' : 'text-gray-600'}>No conversations yet</p>
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-center text-sm text-white/60">
+              No history yet. Ask a question to begin the archive.
             </div>
           ) : (
-            <div className="space-y-4">
-              {history.map((item) => (
-                <div key={item.id} className={`rounded-xl p-6 border transition ${isDark ? 'bg-slate-800/50 border-slate-700 hover:bg-slate-800' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}`}>
-                  <div className="flex items-start justify-between mb-3">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${isDark ? 'bg-violet-500/20 text-violet-300' : 'bg-violet-100 text-violet-700'}`}>
-                      {item.niche}
-                    </span>
-                    <div className={`flex items-center gap-2 text-xs ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
-                      <Clock className="w-3 h-3" />
-                      {new Date(item.created_at).toLocaleDateString()}
-                    </div>
+            history.map((item) => (
+              <div
+                key={item.id}
+                className="rounded-3xl border border-white/10 bg-white/5 p-6 text-sm text-white/70"
+              >
+                <div className="flex items-center justify-between text-xs uppercase tracking-[0.4em] text-white/50">
+                  <span>{item.niche}</span>
+                  <span className="flex items-center gap-1 text-white/60">
+                    <Clock className="h-3 w-3" />
+                    {new Date(item.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="mt-4 space-y-3">
+                  <div>
+                    <p className="text-[0.6rem] uppercase tracking-[0.4em] text-white/40">Question</p>
+                    <p className="text-base text-white">{item.question}</p>
                   </div>
-                  <div className="space-y-3">
-                    <div>
-                      <p className={`text-sm mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Question:</p>
-                      <p className={isDark ? 'text-white' : 'text-gray-900'}>{item.question}</p>
-                    </div>
-                    <div>
-                      <p className={`text-sm mb-1 ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>Answer:</p>
-                      <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>{item.answer}</p>
-                    </div>
+                  <div>
+                    <p className="text-[0.6rem] uppercase tracking-[0.4em] text-white/40">Answer</p>
+                    <p className="text-base text-white/80">{item.answer}</p>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))
           )}
         </div>
       </div>

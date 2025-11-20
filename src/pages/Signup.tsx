@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, type FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+
 import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from '@/contexts/ThemeContext';
 import { CosmicBackground } from '@/components/CosmicBackground';
-import { Sparkles, Moon, Sun } from 'lucide-react';
+import { LiquidPanel } from '@/components/LiquidPanel';
+import { PlanetOrbit } from '@/components/PlanetOrbit';
 
 export const Signup = () => {
   const [name, setName] = useState('');
@@ -12,15 +13,13 @@ export const Signup = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signup } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
-  const isDark = theme === 'dark';
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     setLoading(true);
+
     try {
       await signup(email, password, name);
       navigate('/chat');
@@ -32,85 +31,79 @@ export const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen relative overflow-hidden bg-black text-white">
       <CosmicBackground />
-      <div className="w-full max-w-md">
-        <div className="absolute top-4 right-4">
-          <button
-            onClick={toggleTheme}
-            className={`p-3 rounded-full backdrop-blur-xl ${isDark ? 'bg-white/10 hover:bg-white/20' : 'bg-gray-900/10 hover:bg-gray-900/20'} border ${isDark ? 'border-white/20' : 'border-gray-300'} transition`}
-          >
-            {isDark ? <Sun className="w-5 h-5 text-yellow-300" /> : <Moon className="w-5 h-5 text-slate-700" />}
-          </button>
-        </div>
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-600 mb-4">
-            <Sparkles className="w-8 h-8 text-white" />
-          </div>
-          <h1 className={`text-4xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>Join the Cosmos</h1>
-          <p className={isDark ? 'text-purple-300' : 'text-violet-600'}>Create your astrology account</p>
+      <div className="relative z-10 mx-auto flex max-w-4xl flex-col gap-10 px-6 py-12">
+        <div className="flex flex-col gap-3">
+          <span className="text-xs uppercase tracking-[0.5em] text-white/50">Seven planets</span>
+          <h1 className="text-5xl font-semibold tracking-tight">Begin the orbit</h1>
+          <p className="text-sm text-white/60">A calm, monochrome gateway to the NeuroAstro universe.</p>
+          <PlanetOrbit size="md" className="pointer-events-none" />
         </div>
 
-        <div className={`backdrop-blur-xl rounded-2xl p-8 border shadow-2xl ${isDark ? 'bg-slate-900/80 border-slate-700' : 'bg-white/90 border-gray-200'}`}>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>Name</label>
+        <LiquidPanel className="space-y-6 px-8 py-10">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <label className="text-[0.65rem] uppercase tracking-[0.4em] text-white/40" htmlFor="name">
+                Name
+              </label>
               <input
+                id="name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className={`w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-violet-500 transition ${isDark ? 'bg-slate-900/50 border-slate-700 text-white placeholder-slate-500' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400'}`}
-                placeholder="Your name"
+                className="w-full rounded-2xl border border-white/15 bg-transparent px-4 py-3 text-sm text-white placeholder:text-white/35 focus:border-white focus:outline-none"
+                placeholder="Cosmic name"
                 required
               />
             </div>
-
-            <div>
-              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>Email</label>
+            <div className="space-y-2">
+              <label className="text-[0.65rem] uppercase tracking-[0.4em] text-white/40" htmlFor="email">
+                Email
+              </label>
               <input
+                id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className={`w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-violet-500 transition ${isDark ? 'bg-slate-900/50 border-slate-700 text-white placeholder-slate-500' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400'}`}
-                placeholder="your@email.com"
+                className="w-full rounded-2xl border border-white/15 bg-transparent px-4 py-3 text-sm text-white placeholder:text-white/35 focus:border-white focus:outline-none"
+                placeholder="cosmo@astro.com"
                 required
               />
             </div>
-
-            <div>
-              <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>Password</label>
+            <div className="space-y-2">
+              <label className="text-[0.65rem] uppercase tracking-[0.4em] text-white/40" htmlFor="password">
+                Password
+              </label>
               <input
+                id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className={`w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-violet-500 transition ${isDark ? 'bg-slate-900/50 border-slate-700 text-white placeholder-slate-500' : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400'}`}
+                className="w-full rounded-2xl border border-white/15 bg-transparent px-4 py-3 text-sm text-white placeholder:text-white/40 focus:border-white focus:outline-none"
                 placeholder="••••••••"
                 required
               />
             </div>
 
-            {error && (
-              <div className={`p-3 rounded-lg border text-sm ${isDark ? 'bg-red-500/20 border-red-500/50 text-red-200' : 'bg-red-50 border-red-200 text-red-700'}`}>
-                {error}
-              </div>
-            )}
+            {error && <div className="text-xs text-rose-300">{error}</div>}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-semibold hover:from-violet-700 hover:to-fuchsia-700 focus:outline-none focus:ring-2 focus:ring-violet-500 transition disabled:opacity-50 shadow-lg"
+              className="w-full rounded-2xl border border-white/25 bg-white/80 py-3 text-sm font-semibold text-black transition hover:bg-white"
             >
-              {loading ? 'Creating account...' : 'Sign Up'}
+              {loading ? 'Opening…' : 'Create access'}
             </button>
           </form>
 
-          <p className={`mt-6 text-center text-sm ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>
-            Already have an account?{' '}
-            <Link to="/login" className={`font-semibold ${isDark ? 'text-fuchsia-400 hover:text-fuchsia-300' : 'text-violet-600 hover:text-violet-700'}`}>
+          <p className="text-center text-[0.6rem] uppercase tracking-[0.4em] text-white/40">
+            Already have a passage?{' '}
+            <Link to="/login" className="text-white">
               Sign in
             </Link>
           </p>
-        </div>
+        </LiquidPanel>
       </div>
     </div>
   );

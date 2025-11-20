@@ -35,14 +35,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string) => {
     const res = await auth.login({ email, password });
-    localStorage.setItem('token', res.data.token);
-    setUser(res.data.user);
+    localStorage.setItem('token', res.data.access_token);
+    const profileRes = await auth.getProfile();
+    setUser(profileRes.data);
   };
 
   const signup = async (email: string, password: string, name: string) => {
     const res = await auth.signup({ email, password, name });
-    localStorage.setItem('token', res.data.token);
-    setUser(res.data.user);
+    localStorage.setItem('token', res.data.access_token);
+    const profileRes = await auth.getProfile();
+    setUser(profileRes.data);
   };
 
   const logout = () => {
