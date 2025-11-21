@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { AxiosError } from 'axios';
 
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/useAuth';
 import { CosmicBackground } from '@/components/CosmicBackground';
 import { LiquidPanel } from '@/components/LiquidPanel';
 import { PlanetOrbit } from '@/components/PlanetOrbit';
@@ -22,8 +23,14 @@ export const Login = () => {
     try {
       await login(email, password);
       navigate('/chat');
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Login failed');
+    } catch (err: unknown) {
+      if (err instanceof AxiosError && err.response?.data?.error) {
+        setError(err.response.data.error);
+      } else if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Login failed');
+      }
     } finally {
       setLoading(false);
     }

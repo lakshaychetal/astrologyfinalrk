@@ -1,4 +1,4 @@
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/useAuth';
 import { CosmicBackground } from '@/components/CosmicBackground';
 import { LiquidPanel } from '@/components/LiquidPanel';
 import { PlanetOrbit } from '@/components/PlanetOrbit';

@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/useAuth';
 import { chat } from '@/lib/api';
 import { CosmicBackground } from '@/components/CosmicBackground';
 import { PlanetOrbit } from '@/components/PlanetOrbit';
+import { BirthDetailWizard, type BirthDetails } from '@/components/BirthDetailWizard';
 import { ArrowUpRight } from 'lucide-react';
 
 interface Message {
@@ -17,6 +18,7 @@ export const Chat = () => {
   const [niche, setNiche] = useState('Love');
   const [loading, setLoading] = useState(false);
   const [selectedNiche, setSelectedNiche] = useState<string | null>(null);
+  const [birthDetails, setBirthDetails] = useState<BirthDetails | null>(null);
   const [bubbleStage, setBubbleStage] = useState<'center' | 'top' | 'thinking' | 'answered'>('center');
   const [showChips, setShowChips] = useState(false);
   const [floatingQuestion, setFloatingQuestion] = useState('');
@@ -90,7 +92,7 @@ export const Chat = () => {
       setMessages([{ role: 'assistant', content: res.data.answer }]);
       setBubbleStage('answered');
       bubbleResetRef.current = setTimeout(() => setBubbleStage('center'), 2200);
-    } catch (err: any) {
+  } catch (_err: unknown) {
       setMessages([
         {
           role: 'assistant',
@@ -123,58 +125,72 @@ export const Chat = () => {
     setBubbleStage('top');
   };
 
+  const handleWizardComplete = (details: BirthDetails) => {
+    setBirthDetails(details);
+    setChartData(JSON.stringify(details));
+  };
+
+  if (!birthDetails) {
+    return <BirthDetailWizard onComplete={handleWizardComplete} />;
+  }
+
+  const birthSummaryLine = `${birthDetails.name} • ${birthDetails.gender}`;
+  const birthRelationshipLine = `${birthDetails.relationshipStatus} • ${birthDetails.employmentStatus}`;
+  const birthMomentLine = `Born ${birthDetails.dob} at ${birthDetails.birthTime} in ${birthDetails.birthPlace}`;
+
   if (!selectedNiche) {
     return (
       <div className="min-h-screen relative overflow-hidden bg-black text-white">
         <CosmicBackground />
-        <div className="relative z-10 mx-auto flex h-screen w-full max-w-md flex-col px-5 py-6">
-          <header className="space-y-3">
-            <span className="text-[0.6rem] uppercase tracking-[0.5em] text-white/50">Seven planets</span>
-            <div className="flex items-center gap-3">
-              <PlanetOrbit size="sm" className="pointer-events-none" />
-              <h1 className="text-3xl font-semibold tracking-tight">Choose your niche</h1>
-            </div>
-            <p className="text-sm text-white/60">Black glass cards with color bursts from the cosmos.</p>
-          </header>
+        <div className="relative z-10 flex h-screen w-full flex-col gap-6 px-6 py-8">
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-[0.6rem] uppercase tracking-[0.5em] text-white/40">Choose your niche</span>
+            <PlanetOrbit size="sm" className="pointer-events-none text-white/50 scale-75" />
+          </div>
 
-          <div className="flex flex-1 flex-col justify-between">
-            <div className="grid h-full min-h-0 grid-cols-2 gap-3" style={{ gridAutoRows: '1fr' }}>
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight">{selectedNiche ? selectedNiche : 'Select a path'}</h1>
+            <p className="text-sm text-white/60">{birthMomentLine} • {birthRelationshipLine}</p>
+          </div>
+
+          <div className="flex flex-1 flex-col gap-4">
+            <div className="grid flex-1 grid-cols-2 gap-3">
               {nicheCards.slice(0, 4).map((card) => (
                 <button
                   key={card.label}
                   type="button"
                   onClick={() => handleCardSelect(card.label)}
-                  className="relative flex h-full w-full overflow-hidden rounded-[26px] border border-white/10 p-3 text-left text-white transition focus-visible:outline-none"
+                  className="relative flex h-full w-full overflow-hidden rounded-[22px] bg-gradient-to-br from-black via-black/80 to-black text-left text-white transition focus-visible:outline-none"
                 >
-                  <div className="absolute inset-0 rounded-[24px]" style={{ backgroundImage: card.gradient }} />
-                  <div className="absolute inset-0 rounded-[24px] bg-black/70 backdrop-blur-[40px]" />
-                  <div className="relative flex h-full flex-col justify-end gap-3">
-                    <div className="flex items-center justify-between text-[0.55rem] uppercase tracking-[0.5em] text-white/70">
+                  <div className="absolute inset-0" style={{ backgroundImage: card.gradient }} />
+                  <div className="absolute inset-0 bg-black/80 backdrop-blur-[60px]" />
+                  <div className="relative flex h-full flex-col justify-end gap-2 px-4 py-4">
+                    <div className="flex items-center justify-between text-[0.55rem] uppercase tracking-[0.5em] text-white/60">
                       <span>{card.label}</span>
                       <ArrowUpRight className="h-4 w-4" />
                     </div>
-                    <p className="text-[0.65rem] text-white/60">{card.subtitle}</p>
+                    <p className="text-[0.65rem] text-white/50">{card.subtitle}</p>
                   </div>
                 </button>
               ))}
             </div>
 
-            <div className="mt-3 grid h-[calc(50vh-60px)] min-h-0 grid-cols-2 gap-3">
+            <div className="grid flex-1 grid-cols-2 gap-3">
               {nicheCards.slice(4).map((card) => (
                 <button
                   key={card.label}
                   type="button"
                   onClick={() => handleCardSelect(card.label)}
-                  className="relative flex h-full w-full overflow-hidden rounded-[26px] border border-white/10 p-3 text-left text-white transition focus-visible:outline-none"
+                  className="relative flex h-full w-full overflow-hidden rounded-[22px] bg-gradient-to-br from-black via-black/80 to-black text-left text-white transition focus-visible:outline-none"
                 >
-                  <div className="absolute inset-0 rounded-[24px]" style={{ backgroundImage: card.gradient }} />
-                  <div className="absolute inset-0 rounded-[24px] bg-black/70 backdrop-blur-[40px]" />
-                  <div className="relative flex h-full flex-col justify-end gap-3">
-                    <div className="flex items-center justify-between text-[0.55rem] uppercase tracking-[0.5em] text-white/70">
+                  <div className="absolute inset-0" style={{ backgroundImage: card.gradient }} />
+                  <div className="absolute inset-0 bg-black/80 backdrop-blur-[60px]" />
+                  <div className="relative flex h-full flex-col justify-end gap-2 px-4 py-4">
+                    <div className="flex items-center justify-between text-[0.55rem] uppercase tracking-[0.5em] text-white/60">
                       <span>{card.label}</span>
                       <ArrowUpRight className="h-4 w-4" />
                     </div>
-                    <p className="text-[0.65rem] text-white/60">{card.subtitle}</p>
+                    <p className="text-[0.65rem] text-white/50">{card.subtitle}</p>
                   </div>
                 </button>
               ))}
@@ -189,134 +205,127 @@ export const Chat = () => {
     <div className="min-h-screen relative overflow-hidden bg-black text-white">
       <CosmicBackground />
       <div className="absolute inset-0 bg-black/95" aria-hidden />
-      <div className="relative z-10 flex min-h-screen w-full flex-col px-4 py-5">
-        <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4">
-          <header className="flex items-center justify-between gap-4 border-b border-white/10 pb-3 text-[0.55rem] uppercase tracking-[0.6em] text-white/40">
-            <div className="flex items-center gap-3">
-              <PlanetOrbit size="sm" className="text-white/60" />
-              <div>
-                <span className="block text-[0.5rem] uppercase tracking-[0.5em] text-white/40">Selected niche</span>
-                <strong className="block text-2xl tracking-tight text-white">{selectedNiche}</strong>
-              </div>
+      <div className="relative z-10 flex min-h-screen w-full flex-col gap-6 px-6 py-8">
+        <div className="flex items-center justify-between border-b border-white/10 pb-2 text-[0.55rem] uppercase tracking-[0.6em] text-white/40">
+          <div className="flex items-center gap-2">
+            <PlanetOrbit size="sm" className="text-white/60 scale-75" />
+            <span>Selected niche</span>
+          </div>
+          <strong className="text-xl tracking-tight text-white">{selectedNiche}</strong>
+        </div>
+
+        <div className="space-y-1 text-sm text-white/60">
+          <p>A divine, Apple-inspired space for GPT-style insight.</p>
+          <p className="text-[0.55rem] uppercase tracking-[0.4em] text-white/60">{birthSummaryLine}</p>
+          <p className="text-[0.65rem] text-white/50">{birthMomentLine} • {birthRelationshipLine}</p>
+        </div>
+
+        <div className="relative flex flex-1 flex-col items-center justify-center gap-5">
+          <div
+            className={`relative flex flex-col items-center gap-2 transition-all duration-700 ${
+              bubbleStage === 'top' ? '-translate-y-6' : bubbleStage === 'thinking' ? 'translate-y-2' : 'translate-y-0'
+            }`}
+          >
+            <div className="relative flex items-center justify-center">
+              <div className="bubble-glow" />
+              <div className={`bubble-core ${bubbleStage !== 'center' ? 'bubble-top' : ''}`} />
             </div>
+            <p className="text-xs uppercase tracking-[0.4em] text-white/60">
+              {bubbleStage === 'thinking'
+                ? 'Divine source is composing'
+                : bubbleStage === 'top'
+                ? 'Listening closely'
+                : bubbleStage === 'answered'
+                ? 'Answer received'
+                : 'Awaiting your question'}
+            </p>
+            {bubbleStage !== 'center' && (floatingQuestion || question) && (
+              <div className="rounded-full border border-white/10 bg-white/5 px-5 py-2 text-xs uppercase tracking-[0.3em] text-white/70 shadow-[0_15px_40px_rgba(0,0,0,0.6)]">
+                {floatingQuestion || question}
+              </div>
+            )}
+          </div>
+
+          {showChips && (
+            <div className="grid w-full grid-cols-2 gap-3">
+              {questionChips.map((prompt) => (
+                <button key={prompt} type="button" onClick={() => handlePresetQuestion(prompt)} className="chip-tone">
+                  <span className="text-[0.65rem] font-semibold uppercase tracking-[0.35em] text-white/70">Ask</span>
+                  <p className="text-sm leading-tight text-white">{prompt}</p>
+                </button>
+              ))}
+            </div>
+          )}
+          {!showChips && bubbleStage === 'center' && (
             <button
               type="button"
-              onClick={() => setSelectedNiche(null)}
-              className="rounded-full border border-white/20 px-3 py-1 text-[0.6rem] uppercase tracking-[0.4em] text-white/60 transition hover:border-white/50"
+              onClick={() => {
+                setShowChips(true);
+                setBubbleStage('center');
+                setFloatingQuestion('');
+              }}
+              className="text-xs uppercase tracking-[0.4em] text-white/50 underline-offset-4 hover:text-white"
             >
-              Change
+              Ask another question
             </button>
-          </header>
+          )}
+        </div>
 
-          <p className="text-sm text-white/40">A divine, Apple-inspired space for GPT-style insight.</p>
-
-          <div className="relative flex flex-1 flex-col items-center justify-center gap-5">
-            <div
-              className={`relative flex flex-col items-center gap-2 transition-all duration-700 ${
-                bubbleStage === 'top' ? '-translate-y-6' : bubbleStage === 'thinking' ? 'translate-y-2' : 'translate-y-0'
-              }`}
-            >
-              <div className="relative flex items-center justify-center">
-                <div className="bubble-glow" />
-                <div className={`bubble-core ${bubbleStage !== 'center' ? 'bubble-top' : ''}`} />
-              </div>
-              <p className="text-xs uppercase tracking-[0.4em] text-white/60">
-                {bubbleStage === 'thinking'
-                  ? 'Divine source is composing'
-                  : bubbleStage === 'top'
-                  ? 'Listening closely'
-                  : bubbleStage === 'answered'
-                  ? 'Answer received'
-                  : 'Awaiting your question'}
-              </p>
-              {bubbleStage !== 'center' && (floatingQuestion || question) && (
-                <div className="rounded-full border border-white/10 bg-white/5 px-5 py-2 text-xs uppercase tracking-[0.3em] text-white/70 shadow-[0_15px_40px_rgba(0,0,0,0.6)]">
-                  {floatingQuestion || question}
+        <div className="flex flex-1 flex-col gap-3">
+          <div className="flex flex-1 flex-col rounded-[32px] border border-white/10 bg-black/90 px-5 py-5 shadow-[0_30px_90px_rgba(0,0,0,0.75)]">
+            <div className="mb-3 flex items-center justify-between text-[0.6rem] uppercase tracking-[0.5em] text-white/40">
+              <span>Live prompt</span>
+              <span>{user?.name ?? 'Traveler'}</span>
+            </div>
+            <div className="flex-1 space-y-4 overflow-y-auto pr-1">
+              {messages.length === 0 ? (
+                <div className="text-center text-white/40">The halo waits for your question.</div>
+              ) : (
+                messages.map((msg, index) => (
+                  <div
+                    key={index}
+                    className={`rounded-[28px] border px-4 py-3 text-sm shadow-[0_20px_45px_rgba(0,0,0,0.6)] ${
+                      msg.role === 'user'
+                        ? 'border-white/20 bg-gradient-to-br from-[#050b18] via-[#030612] to-[#01030c] text-white'
+                        : 'border-white/20 bg-white/5 text-white/70'
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
+                ))
+              )}
+              {loading && (
+                <div className="flex gap-2">
+                  <span className="h-2 w-2 rounded-full bg-white/70 animate-pulse" />
+                  <span className="h-2 w-2 rounded-full bg-white/40 animate-pulse" />
+                  <span className="h-2 w-2 rounded-full bg-white/20 animate-pulse" />
                 </div>
               )}
+              <div ref={messagesEndRef} />
             </div>
-
-            {showChips && (
-              <div className="grid w-full max-w-lg grid-cols-2 gap-3">
-                {questionChips.map((prompt) => (
-                  <button key={prompt} type="button" onClick={() => handlePresetQuestion(prompt)} className="chip-tone">
-                    <span className="text-[0.65rem] font-semibold uppercase tracking-[0.35em] text-white/70">Ask</span>
-                    <p className="text-sm leading-tight text-white">{prompt}</p>
-                  </button>
-                ))}
-              </div>
-            )}
-            {!showChips && bubbleStage === 'center' && (
-              <button
-                type="button"
-                onClick={() => {
-                  setShowChips(true);
-                  setBubbleStage('center');
-                  setFloatingQuestion('');
-                }}
-                className="text-xs uppercase tracking-[0.4em] text-white/50 underline-offset-4 hover:text-white"
-              >
-                Ask another question
-              </button>
-            )}
           </div>
 
-          <div className="flex flex-1 flex-col gap-3">
-            <div className="flex flex-1 flex-col rounded-[32px] border border-white/10 bg-black/90 px-5 py-5 shadow-[0_30px_90px_rgba(0,0,0,0.75)]">
-              <div className="mb-3 flex items-center justify-between text-[0.6rem] uppercase tracking-[0.5em] text-white/40">
-                <span>Live prompt</span>
-                <span>{user?.name ?? 'Traveler'}</span>
-              </div>
-              <div className="flex-1 space-y-4 overflow-y-auto pr-1">
-                {messages.length === 0 ? (
-                  <div className="text-center text-white/40">The halo waits for your question.</div>
-                ) : (
-                  messages.map((msg, index) => (
-                    <div
-                      key={index}
-                      className={`rounded-[28px] border px-4 py-3 text-sm shadow-[0_20px_45px_rgba(0,0,0,0.6)] ${
-                        msg.role === 'user'
-                          ? 'border-white/20 bg-gradient-to-br from-[#050b18] via-[#030612] to-[#01030c] text-white'
-                          : 'border-white/20 bg-white/5 text-white/70'
-                      }`}
-                    >
-                      {msg.content}
-                    </div>
-                  ))
-                )}
-                {loading && (
-                  <div className="flex gap-2">
-                    <span className="h-2 w-2 rounded-full bg-white/70 animate-pulse" />
-                    <span className="h-2 w-2 rounded-full bg-white/40 animate-pulse" />
-                    <span className="h-2 w-2 rounded-full bg-white/20 animate-pulse" />
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-3 pt-1">
-              <div className="flex gap-3">
-                <div className="flex-1 gradient-sender">
-                  <input
-                    type="text"
-                    value={question}
-                    onChange={(e) => setQuestion(e.target.value)}
-                    placeholder="Message GPT-5"
-                    className="w-full rounded-[32px] border border-transparent bg-transparent px-5 py-3 text-sm text-white placeholder:text-white/70 focus:border-transparent focus:outline-none"
-                    disabled={loading}
-                  />
-                </div>
-                <button
-                  type="submit"
+          <form onSubmit={handleSubmit} className="space-y-3 pt-1">
+            <div className="flex gap-3">
+              <div className="flex-1 gradient-sender">
+                <input
+                  type="text"
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  placeholder="Message GPT-5"
+                  className="w-full rounded-[32px] border border-transparent bg-transparent px-5 py-3 text-sm text-white placeholder:text-white/70 focus:border-transparent focus:outline-none"
                   disabled={loading}
-                  className="gradient-send-btn rounded-[32px] px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
-                >
-                  Send
-                </button>
+                />
               </div>
-            </form>
-          </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="gradient-send-btn rounded-[32px] px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+              >
+                Send
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
