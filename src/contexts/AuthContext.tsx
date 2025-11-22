@@ -1,4 +1,4 @@
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect, ReactNode, useCallback } from 'react';
 import { auth } from '@/lib/api';
 import { AuthContext, type User } from '@/contexts/auth-context-base';
 
@@ -8,7 +8,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (token) {
+    if (token && token !== 'undefined' && token !== 'null') {
       auth.getProfile()
         .then(res => setUser(res.data.user))
         .catch(() => localStorage.removeItem('token'))
@@ -18,24 +18,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     const res = await auth.login({ email, password });
-    localStorage.setItem('token', res.data.access_token);
-    const profileRes = await auth.getProfile();
-    setUser(profileRes.data);
-  };
+    localStorage.setItem('token', res.data.token);
+    setUser(res.data.user);
+  }, []);
 
-  const signup = async (email: string, password: string, name: string) => {
+  const signup = useCallback(async (email: string, password: string, name: string) => {
     const res = await auth.signup({ email, password, name });
-    localStorage.setItem('token', res.data.access_token);
-    const profileRes = await auth.getProfile();
-    setUser(profileRes.data);
-  };
+    localStorage.setItem('token', res.data.token);
+    setUser(res.data.user);
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     localStorage.removeItem('token');
     setUser(null);
-  };
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, login, signup, logout, loading }}>

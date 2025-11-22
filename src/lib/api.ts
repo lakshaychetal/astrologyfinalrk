@@ -1,27 +1,63 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8000/',
+  baseURL: 'http://localhost:5000',
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token && token !== 'undefined' && token !== 'null') {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const auth = {
   signup: (data: { email: string; password: string; name: string }) =>
-    api.post('/auth/signup', data),
+    api.post('/api/signup', data),
   login: (data: { email: string; password: string }) =>
-    api.post('/auth/login', data),
-  getProfile: () => api.get('/auth/me'),
+    api.post('/api/login', data),
+  getProfile: () => api.get('/api/me'),
+};
+
+export const birthDetails = {
+  submit: (data: {
+    name: string;
+    gender: string;
+    dob: string;
+    birthTime: string;
+    birthPlace: string;
+    latitude: number;
+    longitude: number;
+    relationshipStatus: string;
+    employmentStatus: string;
+  }) => api.post('/api/birth-details', data),
+  get: () => api.get('/api/birth-details'),
 };
 
 export const chat = {
-  ask: (data: { question: string; chart_data: string; niche: string }) =>
-    api.post('/chat', data),
-  getHistory: () => api.get('/chat/history'),
+  ask: (data: { question: string; niche: string }) =>
+    api.post('/api/chat', data),
+  getHistory: () => api.get('/api/chat/history'),
 };
 
 export default api;
