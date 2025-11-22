@@ -23,11 +23,13 @@ db = client[DB_NAME]
 
 users_collection = db["users"]
 chats_collection = db["chats"]
+birth_details_collection = db["birth_details"]
 
 # Create indexes on first use
 def ensure_indexes():
     try:
         users_collection.create_index("email", unique=True)
         chats_collection.create_index("user_id")
+        birth_details_collection.create_index("user_id", unique=True)
     except:
         pass

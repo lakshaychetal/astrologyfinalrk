@@ -3,13 +3,11 @@ Flask API for User Authentication and AI Chat
 """
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from auth import hash_password, verify_password, create_token, token_required, admin_required
-from database import users_collection, chats_collection, db
+from auth import hash_password, verify_password, create_token, token_required, admin_required, decode_token
+from database import users_collection, chats_collection
 from datetime import datetime
 from bson import ObjectId
 import logging
-import threading
-from astrology_service import AstrologyService
 
 # Import AI components
 from agents.simple_chart_parser import ChartParser
@@ -25,25 +23,11 @@ CORS(app)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Birth details collection
-birth_details_collection = db["birth_details"]
-
-@app.before_request
-def handle_preflight():
-    if request.method == "OPTIONS":
-        response = app.make_default_options_response()
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
-        response.headers['Access-Control-Allow-Methods'] = 'GET,PUT,POST,DELETE,OPTIONS,PATCH'
-        response.headers['Access-Control-Max-Age'] = '3600'
-        return response
-
 @app.after_request
 def after_request(response):
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
-    response.headers['Access-Control-Allow-Methods'] = 'GET,PUT,POST,DELETE,OPTIONS,PATCH'
-    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    response.headers['Access-Control-Allow-Methods'] = 'GET,PUT,POST,DELETE,OPTIONS'
     return response
 
 # Initialize AI components
@@ -113,23 +97,34 @@ def auth_me():
         return "", 200
     
     token = request.headers.get("Authorization")
-    logger.info(f"Authorization header: {token}")
-    logger.info(f"All headers: {dict(request.headers)}")
-    
     if not token or not token.startswith("Bearer "):
-        return jsonify({"error": "Token missing", "received": token}), 401
+        return jsonify({"error": "Token missing"}), 401
+    
     try:
-        from auth import decode_token
         token_str = token.split(" ")[1]
-        logger.info(f"Validating token: {token_str[:50]}...")
         data = decode_token(token_str)
-        logger.info(f"Token valid for user: {data.get('email')}")
         request.user = data
     except Exception as e:
-        logger.error(f"Token decode error: {e}")
         return jsonify({"error": f"Invalid token: {str(e)}"}), 401
     
     return get_profile()
+
+@app.route("/auth/verify", methods=["POST", "OPTIONS"])
+def verify_token_endpoint():
+    if request.method == "OPTIONS":
+        return "", 200
+    
+    data = request.json
+    token = data.get("token")
+    
+    if not token:
+        return jsonify({"error": "Token required"}), 400
+    
+    try:
+        decoded = decode_token(token)
+        return jsonify({"valid": True, "user": decoded}), 200
+    except Exception as e:
+        return jsonify({"valid": False, "error": str(e)}), 401
 
 @app.route("/api/signup", methods=["POST", "OPTIONS"])
 def signup():
@@ -209,112 +204,6 @@ def get_profile():
         "is_admin": user.get("is_admin", False),
         "created_at": user.get("created_at").isoformat() if user.get("created_at") else None
     }), 200
-
-# ===== BIRTH DETAILS ENDPOINTS =====
-
-@app.route("/api/birth-details", methods=["POST", "OPTIONS"])
-@token_required
-def save_birth_details():
-    if request.method == "OPTIONS":
-        return "", 200
-    
-    data = request.json
-    name = data.get("name")
-    gender = data.get("gender")
-    dob = data.get("dob")
-    birth_time = data.get("birthTime")
-    birth_place = data.get("birthPlace")
-    latitude = data.get("latitude")
-    longitude = data.get("longitude")
-    
-    if not all([name, gender, dob, birth_time, birth_place, latitude, longitude]):
-        return jsonify({"error": "All fields required"}), 400
-    
-    birth_details = {
-        "user_id": request.user["user_id"],
-        "name": name,
-        "gender": gender,
-        "dob": dob,
-        "birth_time": birth_time,
-        "birth_place": birth_place,
-        "latitude": float(latitude),
-        "longitude": float(longitude),
-        "relationship_status": data.get("relationshipStatus"),
-        "employment_status": data.get("employmentStatus"),
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow()
-    }
-    
-    # Update if exists, insert if not
-    result = birth_details_collection.update_one(
-        {"user_id": request.user["user_id"]},
-        {"$set": birth_details},
-        upsert=True
-    )
-
-    # Kick off background fetch of astrology data (non-blocking)
-    try:
-        # create a shared service instance (lightweight)
-        service = AstrologyService()
-        thread = threading.Thread(
-            target=service.fetch_all_astrology_data,
-            args=(request.user["user_id"], birth_details),
-            daemon=True,
-        )
-        thread.start()
-        logger.info("Started background astrology fetch thread for user %s", request.user["user_id"])
-    except Exception as e:
-        logger.exception("Failed to start astrology background thread: %s", e)
-    
-    return jsonify({
-        "message": "Birth details saved",
-        "id": str(result.upserted_id) if result.upserted_id else None
-    }), 200
-
-@app.route("/api/birth-details", methods=["GET"])
-@token_required
-def get_birth_details():
-    details = birth_details_collection.find_one({"user_id": request.user["user_id"]})
-    
-    if not details:
-        return jsonify({"error": "Birth details not found"}), 404
-    
-    return jsonify({
-        "id": str(details["_id"]),
-        "name": details["name"],
-        "gender": details["gender"],
-        "dob": details["dob"],
-        "birth_time": details["birth_time"],
-        "birth_place": details["birth_place"],
-        "latitude": details["latitude"],
-        "longitude": details["longitude"],
-        "relationship_status": details.get("relationship_status"),
-        "employment_status": details.get("employment_status"),
-        "created_at": details["created_at"].isoformat(),
-        "updated_at": details["updated_at"].isoformat()
-    }), 200
-
-@app.route("/api/astro-data", methods=["GET"])
-@token_required
-def get_astro_data():
-    """Debug endpoint to view stored astrology data for current user"""
-    try:
-        astro_doc = db.astrology_data.find_one({"user_id": request.user["user_id"]})
-        
-        if not astro_doc:
-            return jsonify({"error": "No astrology data found for this user. Save birth details first."}), 404
-        
-        return jsonify({
-            "user_id": request.user["user_id"],
-            "birth_data": astro_doc.get("birth_data"),
-            "text_snippets": astro_doc.get("text_snippets", []),
-            "api_responses": astro_doc.get("api_responses", {}),
-            "snippet_count": len(astro_doc.get("text_snippets", [])),
-            "created_at": astro_doc.get("created_at").isoformat() if astro_doc.get("created_at") else None
-        }), 200
-    except Exception as e:
-        logger.error(f"Error fetching astro data: {e}")
-        return jsonify({"error": str(e)}), 500
 
 # ===== ADMIN ENDPOINTS =====
 
@@ -428,63 +317,11 @@ def chat():
     chart_data = data.get("chart_data")
     niche = data.get("niche", "Love & Relationships")
     
-    if not question:
-        return jsonify({"error": "Question required"}), 400
-
-    # Merge chart_data with stored astrology data for this user (if available)
-    try:
-        astro_doc = db.astrology_data.find_one({"user_id": request.user["user_id"]})
-    except Exception:
-        astro_doc = None
-
-    combined_chart_text = ""
-    if chart_data:
-        # If chart_data provided in request, start with that
-        if isinstance(chart_data, dict):
-            try:
-                combined_chart_text += json.dumps(chart_data)
-            except Exception:
-                combined_chart_text += str(chart_data)
-        else:
-            combined_chart_text += str(chart_data)
-
-    if astro_doc:
-        try:
-            # Append birth data and snippets collected previously
-            bd = astro_doc.get("birth_data") or {}
-            snippets = astro_doc.get("text_snippets") or []
-            api_responses = astro_doc.get("api_responses") or {}
-
-            combined_chart_text += "\n\n=== STORED ASTROLOGY BIRTH DATA ===\n"
-            try:
-                combined_chart_text += json.dumps(bd)
-            except Exception:
-                combined_chart_text += str(bd)
-
-            combined_chart_text += "\n\n=== STORED ASTROLOGY SNIPPETS ===\n"
-            for s in snippets:
-                try:
-                    combined_chart_text += isinstance(s, str) and s or json.dumps(s)
-                except Exception:
-                    combined_chart_text += str(s)
-                combined_chart_text += "\n"
-
-            combined_chart_text += "\n\n=== STORED API RESPONSES (TRUNCATED) ===\n"
-            try:
-                # Keep it readable but avoid massive dumps
-                combined_chart_text += json.dumps(api_responses, indent=2)[:4000]
-            except Exception:
-                combined_chart_text += str(api_responses)[:4000]
-        except Exception:
-            # ignore any assembly errors and proceed with what we have
-            pass
-
-    # Require some chart content to parse; if none, return error
-    if not combined_chart_text.strip():
-        return jsonify({"error": "No chart data available (neither provided nor stored)"}), 400
+    if not question or not chart_data:
+        return jsonify({"error": "Question and chart_data required"}), 400
     
     try:
-        factors = chart_parser.parse_chart_text(combined_chart_text, niche)
+        factors = chart_parser.parse_chart_text(chart_data, niche)
         
         result = smart_orchestrator.answer_question(
             question=question,
@@ -492,7 +329,7 @@ def chat():
             niche=niche,
             niche_instruction="",
             conversation_history=[],
-            mode="expand"  # Always use expand mode for detailed responses
+            mode="expand"
         )
         
         chat_record = {
@@ -540,7 +377,6 @@ def query():
     niche = data.get("niche", "love")
     mode = data.get("mode", "expand")
     
-    # Map niche
     niche_map = {
         "love": "Love & Relationships",
         "career": "Career & Professional",
@@ -550,7 +386,6 @@ def query():
     }
     niche_full = niche_map.get(niche, "Love & Relationships")
     
-    # Convert chart_data object to text
     chart_text = f"""RASHI CHART (D1):
 Ascendant: {chart_data_obj.get('ascendant', 'Cancer')}
 7th House: {chart_data_obj.get('7th_house_sign', 'Capricorn')}

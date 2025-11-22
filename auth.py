@@ -7,7 +7,9 @@ from datetime import datetime, timedelta
 from functools import wraps
 from flask import request, jsonify
 import os
+from dotenv import load_dotenv
 
+load_dotenv()
 SECRET_KEY = os.getenv("JWT_SECRET", "astro_secret_key_2024")
 JWT_EXPIRY_HOURS = 24
 
@@ -27,7 +29,12 @@ def create_token(user_id: str, email: str, is_admin: bool = False) -> str:
     return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
 
 def decode_token(token: str) -> dict:
-    return jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+    try:
+        return jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+    except jwt.ExpiredSignatureError:
+        raise Exception("Token expired")
+    except jwt.InvalidTokenError as e:
+        raise Exception(f"Invalid token: {str(e)}")
 
 def token_required(f):
     @wraps(f)
@@ -36,10 +43,11 @@ def token_required(f):
         if not token or not token.startswith("Bearer "):
             return jsonify({"error": "Token missing"}), 401
         try:
-            data = decode_token(token.split(" ")[1])
+            token_str = token.split(" ")[1]
+            data = decode_token(token_str)
             request.user = data
-        except:
-            return jsonify({"error": "Invalid token"}), 401
+        except Exception as e:
+            return jsonify({"error": f"Invalid token: {str(e)}"}), 401
         return f(*args, **kwargs)
     return decorated
 
